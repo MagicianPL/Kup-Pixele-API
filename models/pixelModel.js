@@ -10,6 +10,7 @@ const pixelSchema = new mongoose.Schema(
     isSold: { type: Boolean, default: false },
     isLimited: { type: Boolean, default: false },
     background: { type: String, default: "transparent" },
+    isGold: { type: Boolean, default: false },
   },
   {
     timestamps: true,

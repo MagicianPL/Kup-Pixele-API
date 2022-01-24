@@ -9,17 +9,26 @@ pixelRouter.get("/seed", async (req, res) => {
     if (packages.length > 0) {
       return res.status(400).json({ message: "Cannot seeds more packages" });
     } else {
-      for (i = 1; i < 100001; i++) {
+      for (i = 1; i < 10001; i++) {
         const pixelPack = new Pixel({
           number: i,
         });
         await pixelPack.save();
-        res.status(201).json({ success: true });
       }
+      res.status(201).json({ success: true });
     }
   } catch (err) {
     console.log(err);
-    res.send({ message: err.message });
+    res.json({ message: err.message });
+  }
+});
+
+pixelRouter.get("/", async (req, res) => {
+  try {
+    const data = await Pixel.find();
+    res.status(200).json(data);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
   }
 });
 
