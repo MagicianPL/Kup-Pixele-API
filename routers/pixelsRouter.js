@@ -1,5 +1,4 @@
 const express = require("express");
-const { trusted } = require("mongoose");
 const Pixel = require("../models/pixelModel");
 
 const pixelRouter = express.Router();

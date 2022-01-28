@@ -5,6 +5,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 require("dotenv").config();
 const pixelRouter = require("./routers/pixelsRouter");
+const userRouter = require("./routers/userRouter");
 
 const port = process.env.PORT || 5000;
 
@@ -25,6 +26,7 @@ app.use(bodyParser.json());
 
 //routers
 app.use("/api/pixels", pixelRouter);
+app.use("/api/user", userRouter);
 
 app.get("/", (req, res) => {
   res.send("Homepage");
