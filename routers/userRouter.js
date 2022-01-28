@@ -4,6 +4,7 @@ const User = require("../models/userModel");
 
 const userRouter = express.Router();
 
+//USER REGISTER
 userRouter.post("/register", async (req, res) => {
   try {
     const newUser = new User({
