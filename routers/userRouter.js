@@ -16,6 +16,12 @@ userRouter.post("/register", async (req, res) => {
     if (existingEmail) {
       return res.status(400).json({ message: "Adres e-mail już istnieje" });
     }
+
+    if (req.body.password.length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Hasło musi składać się z co najmniej 6 znaków" });
+    }
     //if email doesn't exist - create new account (user)
     await newUser.save();
     res.status(201).json({ login: newUser.login, email: newUser.email });
