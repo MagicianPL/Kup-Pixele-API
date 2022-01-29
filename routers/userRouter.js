@@ -50,6 +50,7 @@ userRouter.post("/login", async (req, res) => {
     //If password is correct
     if (bcrypt.compareSync(req.body.password, user.password)) {
       const loggedUser = {
+        _id: user._id,
         login: user.login,
         email: user.email,
         token: generateToken(user),

@@ -62,4 +62,34 @@ pixelRouter.get("/limited", async (req, res) => {
   }
 });
 
+pixelRouter.get("/test", async (req, res) => {
+  const nonLimitedPlaces = await Pixel.find({ isLimited: false });
+  const buyedPlaces = [];
+  for (i = 1; i < 6; i++) {
+    console.log(i);
+    console.log(nonLimitedPlaces.length);
+    const randomNumber = Math.floor(Math.random() * nonLimitedPlaces.length);
+    console.log(randomNumber);
+    let place = await Pixel.findOne({ number: randomNumber });
+    if (place.isSold === true || place.isLimited === true) {
+      do {
+        const randomNumber = Math.floor(Math.random * nonLimitedPlaces.length);
+        const findPlace = await Pixel.findOne({ number: randomNumber });
+        place = findPlace;
+      } while (place.isSold === true || place.isLimited === true);
+    } else {
+      await Pixel.findOneAndUpdate(
+        { number: place.number },
+        {
+          isSold: true,
+          background: "yellow",
+          owner: "61f502932a6e105ec2f7e650",
+        }
+      );
+      buyedPlaces.push(place);
+    }
+  }
+  res.json({ array: buyedPlaces });
+});
+
 module.exports = pixelRouter;

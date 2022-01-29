@@ -11,6 +11,7 @@ const pixelSchema = new mongoose.Schema(
     isLimited: { type: Boolean, default: false },
     background: { type: String, default: "transparent" },
     isGold: { type: Boolean, default: false },
+    owner: { type: mongoose.Schema.Types.ObjectId, ref: "PixelUser" },
   },
   {
     timestamps: true,
