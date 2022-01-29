@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/userModel");
+const generateToken = require("../helpers/generateToken");
 
 const userRouter = express.Router();
 
@@ -48,10 +49,12 @@ userRouter.post("/login", async (req, res) => {
     }
     //If password is correct
     if (bcrypt.compareSync(req.body.password, user.password)) {
-      res.status(200).json({
+      const loggedUser = {
         login: user.login,
         email: user.email,
-      });
+        token: generateToken(user),
+      };
+      res.status(200).json(loggedUser);
     } else {
       return res
         .status(404)
