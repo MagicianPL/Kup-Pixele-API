@@ -69,7 +69,25 @@ userRouter.post("/login", async (req, res) => {
 
 userRouter.put("/update", authUser, async (req, res) => {
   const { login, email, password } = req.body;
-  res.json({ user: req.user });
+  if (!login || !email || !password) {
+    return res.status(400).json({ message: "Otrzymano niepełne informacje" });
+  }
+
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: req.user._id },
+      { login, email, password: bcrypt.hashSync(password, 8) }
+    );
+    res.status(200).json({
+      login: updatedUser.login,
+      email: updatedUser.email,
+      password: updatedUser.password,
+      _id: updatedUser._id,
+      token: generateToken(updatedUser),
+    });
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
 });
 
 module.exports = userRouter;
