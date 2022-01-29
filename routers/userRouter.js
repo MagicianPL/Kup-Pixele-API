@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const User = require("../models/userModel");
 const generateToken = require("../helpers/generateToken");
+const authUser = require("../helpers/authUser");
 
 const userRouter = express.Router();
 
@@ -64,6 +65,11 @@ userRouter.post("/login", async (req, res) => {
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
+});
+
+userRouter.put("/update", authUser, async (req, res) => {
+  const { login, email, password } = req.body;
+  res.json({ user: req.user });
 });
 
 module.exports = userRouter;
