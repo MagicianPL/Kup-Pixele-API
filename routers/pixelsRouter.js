@@ -1,5 +1,7 @@
 const express = require("express");
 const Pixel = require("../models/pixelModel");
+const authUser = require("../helpers/authUser");
+const { findOneAndUpdate } = require("../models/pixelModel");
 
 const pixelRouter = express.Router();
 
@@ -57,6 +59,46 @@ pixelRouter.get("/limited", async (req, res) => {
     } else {
       res.status(404).json({ message: "Sorry, no more empty limited pixels" });
     }
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+pixelRouter.get("/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const place = await Pixel.findOne({ _id: id });
+    if (!place) {
+      return res
+        .status(404)
+        .json({ message: "Nie znaleziono miejsca o podanym id" });
+    }
+    res.status(200).json(place);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+pixelRouter.put("/:id", authUser, async (req, res) => {
+  const { id } = req.params;
+  const { name, url, description, background } = req.body;
+
+  try {
+    const place = await Pixel.findOne({ _id: id });
+    if (!place)
+      return res
+        .status(404)
+        .json({ message: "Nie znaleziono miejsca o podanym id" });
+    const updatedPlace = {
+      name: name || place.name,
+      url: url || place.url,
+      description: description || place.description,
+      background: background || place.background,
+    };
+    const updated = await Pixel.findOneAndUpdate({ _id: id }, updatedPlace, {
+      new: true,
+    });
+    res.status(200).json(updated);
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
