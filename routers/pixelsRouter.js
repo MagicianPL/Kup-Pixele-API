@@ -105,7 +105,7 @@ pixelRouter.put("/:id", authUser, async (req, res) => {
   }
 });
 
-pixelRouter.get("/test/test", async (req, res) => {
+/*pixelRouter.get("/test/test", async (req, res) => {
   const limitedPlaces = await Pixel.find({ isLimited: true });
   const buyedPlaces = [];
   for (i = 1; i < 4; i++) {
@@ -137,6 +137,6 @@ pixelRouter.get("/test/test", async (req, res) => {
     }
   }
   res.json({ array: buyedPlaces });
-});
+});*/
 
 module.exports = pixelRouter;
