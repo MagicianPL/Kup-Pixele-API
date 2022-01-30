@@ -7,7 +7,8 @@ const pixelRouter = express.Router();
 
 pixelRouter.get("/seed", async (req, res) => {
   try {
-    const packages = Pixel.find();
+    const packages = await Pixel.find();
+    console.log(packages.length);
     if (packages.length > 0) {
       return res.status(400).json({ message: "Cannot seeds more packages" });
     } else {
@@ -16,6 +17,7 @@ pixelRouter.get("/seed", async (req, res) => {
           number: i,
         });
         await pixelPack.save();
+        console.log(i);
       }
       res.status(201).json({ success: true });
     }
@@ -39,7 +41,6 @@ pixelRouter.get("/nonlimited", async (req, res) => {
     const data = await Pixel.find({ isLimited: false });
     if (data.length > 0) {
       res.status(200).json(data);
-      console.log(data.length);
     } else {
       res
         .status(404)
@@ -54,8 +55,8 @@ pixelRouter.get("/limited", async (req, res) => {
   try {
     const data = await Pixel.find({ isLimited: true });
     if (data.length > 0) {
-      res.status(200).json(data);
       console.log(data.length);
+      res.status(200).json(data);
     } else {
       res.status(404).json({ message: "Sorry, no more empty limited pixels" });
     }
@@ -104,28 +105,32 @@ pixelRouter.put("/:id", authUser, async (req, res) => {
   }
 });
 
-pixelRouter.get("/test", async (req, res) => {
-  const nonLimitedPlaces = await Pixel.find({ isLimited: false });
+pixelRouter.get("/test/test", async (req, res) => {
+  const limitedPlaces = await Pixel.find({ isLimited: true });
   const buyedPlaces = [];
-  for (i = 1; i < 6; i++) {
+  for (i = 1; i < 4; i++) {
     console.log(i);
-    console.log(nonLimitedPlaces.length);
-    const randomNumber = Math.floor(Math.random() * nonLimitedPlaces.length);
+    console.log(limitedPlaces.length);
+    const randomNumber =
+      Math.floor(Math.random() * limitedPlaces.length) + 4950;
     console.log(randomNumber);
     let place = await Pixel.findOne({ number: randomNumber });
-    if (place.isSold === true || place.isLimited === true) {
+    if (place.isSold === true || place.isLimited === false) {
       do {
-        const randomNumber = Math.floor(Math.random * nonLimitedPlaces.length);
+        const randomNumber = Math.floor(Math.random * limitedPlaces.length);
         const findPlace = await Pixel.findOne({ number: randomNumber });
         place = findPlace;
-      } while (place.isSold === true || place.isLimited === true);
+      } while (place.isSold === true || place.isLimited === false);
     } else {
       await Pixel.findOneAndUpdate(
         { number: place.number },
         {
+          name: "Github",
+          url: "https://github.com/MagicianPL",
+          description: "Github account with my repositories",
           isSold: true,
-          background: "yellow",
-          owner: "61f502932a6e105ec2f7e650",
+          background: "#006400",
+          owner: "61f5526e69caf07b25da9a1d",
         }
       );
       buyedPlaces.push(place);
