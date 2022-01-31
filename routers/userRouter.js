@@ -76,7 +76,8 @@ userRouter.put("/update", authUser, async (req, res) => {
   try {
     const updatedUser = await User.findOneAndUpdate(
       { _id: req.user._id },
-      { login, email, password: bcrypt.hashSync(password, 8) }
+      { login, email, password: bcrypt.hashSync(password, 8) },
+      { new: true }
     );
     res.status(200).json({
       login: updatedUser.login,
