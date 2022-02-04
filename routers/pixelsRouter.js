@@ -113,7 +113,7 @@ pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
     return res.status(400).json({ message: "Invalid data" });
   }
 
-  //for user
+  //array of buyed places - for user
   const buyedPlaces = [];
 
   try {
@@ -142,6 +142,7 @@ pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
       throw new Error("Cannot get choosed number of places");
     }
 
+    //If everything is ok - update reserved places
     for (const place of buyedPlaces) {
       const soldPlace = await Pixel.findOneAndUpdate(
         { _id: place._id },
@@ -155,7 +156,7 @@ pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
         },
         { new: true }
       );
-
+      //also updating properties in array for user
       place.name = soldPlace.name;
       place.url = soldPlace.url;
       place.background = soldPlace.background;
@@ -165,6 +166,7 @@ pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
 
     res.status(200).json(buyedPlaces);
   } catch (err) {
+    //if something gone wrong - reset reserved places in array
     if (buyedPlaces.length > 0) {
       for (const place of buyedPlaces) {
         await Pixel.findOneAndUpdate({ _id: place._id }, { isReserved: false });
