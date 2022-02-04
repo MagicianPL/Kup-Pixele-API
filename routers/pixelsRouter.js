@@ -1,6 +1,7 @@
 const express = require("express");
 const Pixel = require("../models/pixelModel");
 const authUser = require("../helpers/authUser");
+const getRandomArrayIndex = require("../helpers/getRandomArrayIndex");
 const { findOneAndUpdate } = require("../models/pixelModel");
 
 const pixelRouter = express.Router();
@@ -101,6 +102,73 @@ pixelRouter.put("/:id", authUser, async (req, res) => {
     });
     res.status(200).json(updated);
   } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+});
+
+pixelRouter.put("/buy/nonlimited", async (req, res) => {
+  const { qty, name, url, description, background } = req.body;
+  if (!qty || !name || !url || !background) {
+    return res.status(400).json({ message: "Invalid data" });
+  }
+
+  //for user
+  const buyedPlaces = [];
+
+  try {
+    for (i = qty; i > 0; i--) {
+      let randomPlace;
+      //array of nonlimited, not reserved n not sold places
+      const placesForSold = await Pixel.find({
+        isReserved: false,
+        isLimited: false,
+        isSold: false,
+      });
+      const randomIndex = getRandomArrayIndex(placesForSold);
+      randomPlace = placesForSold[randomIndex];
+
+      const reserved = await Pixel.findOneAndUpdate(
+        { _id: randomPlace._id },
+        { isReserved: true },
+        { new: true }
+      );
+
+      buyedPlaces.push(reserved.toObject());
+    }
+
+    //checking if an array has number of required places for sold
+    if (buyedPlaces.length !== qty) {
+      throw new Error("Cannot get choosed number of places");
+    }
+
+    for (const place of buyedPlaces) {
+      const soldPlace = await Pixel.findOneAndUpdate(
+        { _id: place._id },
+        {
+          name,
+          url,
+          background,
+          description: description || place.description,
+          isSold: true,
+        },
+        { new: true }
+      );
+
+      place.name = soldPlace.name;
+      place.url = soldPlace.url;
+      place.background = soldPlace.background;
+      place.description = soldPlace.description;
+      place.isSold = true;
+    }
+
+    res.status(200).json(buyedPlaces);
+  } catch (err) {
+    if (buyedPlaces.length > 0) {
+      for (const place of buyedPlaces) {
+        await Pixel.findOneAndUpdate({ _id: place._id }, { isReserved: false });
+      }
+    }
+
     res.status(400).json({ message: err.message });
   }
 });
