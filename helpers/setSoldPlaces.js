@@ -8,7 +8,7 @@ const setSoldPlaces = (
   description,
   userId
 ) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     //If everything is ok - update reserved places for sold places (from previous promise in app)
     for (const place of buyedPlaces) {
       const soldPlace = await Pixel.findOneAndUpdate(
