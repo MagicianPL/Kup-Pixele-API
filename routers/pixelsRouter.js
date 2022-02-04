@@ -110,7 +110,7 @@ pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
   const { qty, name, url, description, background } = req.body;
   const { _id: userId } = req.user;
   if (!qty || !name || !url || !background) {
-    return res.status(400).json({ message: "Invalid data" });
+    return res.status(400).json({ message: "Złe dane" });
   }
 
   //array of buyed places - for user
@@ -139,7 +139,7 @@ pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
 
     //checking if an array has number of required places for sold
     if (buyedPlaces.length !== qty) {
-      throw new Error("Cannot get choosed number of places");
+      throw new Error("Coś poszło nie tak z ilością wymaganych miejsc");
     }
 
     //If everything is ok - update reserved places
