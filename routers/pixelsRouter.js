@@ -3,7 +3,8 @@ const Pixel = require("../models/pixelModel");
 const authUser = require("../helpers/authUser");
 const getRandomArrayIndex = require("../helpers/getRandomArrayIndex");
 const { findOneAndUpdate } = require("../models/pixelModel");
-
+const setReservedPlaces = require("../helpers/setReservedPlaces");
+const setSoldPlaces = require("../helpers/setSoldPlaces");
 const pixelRouter = express.Router();
 
 pixelRouter.get("/seed", async (req, res) => {
@@ -106,7 +107,8 @@ pixelRouter.put("/:id", authUser, async (req, res) => {
   }
 });
 
-pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
+/*Route below has two functions from helpers which returns promises. One function sets random places as reserved and pushes them to array - and the second function sets reserved places from array as sold*/
+pixelRouter.put("/buy/nonlimited", async (req, res) => {
   const { qty, name, url, description, background } = req.body;
   const { _id: userId } = req.user;
   if (!qty || !name || !url || !background) {
@@ -117,53 +119,20 @@ pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
   const buyedPlaces = [];
 
   try {
-    for (i = qty; i > 0; i--) {
-      let randomPlace;
-      //array of nonlimited, not reserved n not sold places
-      const placesForSold = await Pixel.find({
-        isReserved: false,
-        isLimited: false,
-        isSold: false,
-      });
-      const randomIndex = getRandomArrayIndex(placesForSold);
-      randomPlace = placesForSold[randomIndex];
-
-      const reserved = await Pixel.findOneAndUpdate(
-        { _id: randomPlace._id },
-        { isReserved: true },
-        { new: true }
-      );
-
-      buyedPlaces.push(reserved.toObject());
-    }
-
+    await setReservedPlaces(qty, buyedPlaces);
     //checking if an array has number of required places for sold
     if (buyedPlaces.length !== qty) {
       throw new Error("Coś poszło nie tak z ilością wymaganych miejsc");
     }
-
-    //If everything is ok - update reserved places
-    for (const place of buyedPlaces) {
-      const soldPlace = await Pixel.findOneAndUpdate(
-        { _id: place._id },
-        {
-          name,
-          url,
-          background,
-          description: description || place.description,
-          isSold: true,
-          owner: userId,
-        },
-        { new: true }
-      );
-      //also updating properties in array for user
-      place.name = soldPlace.name;
-      place.url = soldPlace.url;
-      place.background = soldPlace.background;
-      place.description = soldPlace.description;
-      place.isSold = true;
-    }
-
+    //If everything is ok - update reserved places for sold places
+    await setSoldPlaces(
+      buyedPlaces,
+      name,
+      url,
+      background,
+      description,
+      userId
+    );
     res.status(200).json(buyedPlaces);
   } catch (err) {
     //if something gone wrong - reset reserved places in array
