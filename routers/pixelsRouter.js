@@ -106,8 +106,9 @@ pixelRouter.put("/:id", authUser, async (req, res) => {
   }
 });
 
-pixelRouter.put("/buy/nonlimited", async (req, res) => {
+pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
   const { qty, name, url, description, background } = req.body;
+  const { _id: userId } = req.user;
   if (!qty || !name || !url || !background) {
     return res.status(400).json({ message: "Invalid data" });
   }
@@ -150,6 +151,7 @@ pixelRouter.put("/buy/nonlimited", async (req, res) => {
           background,
           description: description || place.description,
           isSold: true,
+          owner: userId,
         },
         { new: true }
       );
