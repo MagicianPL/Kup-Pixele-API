@@ -108,7 +108,7 @@ pixelRouter.put("/:id", authUser, async (req, res) => {
 });
 
 /*Route below has two functions from helpers which returns promises. One function sets random places as reserved and pushes them to array - and the second function sets reserved places from array as sold*/
-pixelRouter.put("/buy/nonlimited", async (req, res) => {
+pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
   const { qty, name, url, description, background } = req.body;
   const { _id: userId } = req.user;
   if (!qty || !name || !url || !background) {
