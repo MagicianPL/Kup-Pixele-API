@@ -1,4 +1,5 @@
 const express = require("express");
+const stripe = require("stripe")(process.env.STRIPE_SECRET_API);
 const Pixel = require("../models/pixelModel");
 const authUser = require("../helpers/authUser");
 const getRandomArrayIndex = require("../helpers/getRandomArrayIndex");
@@ -108,44 +109,92 @@ pixelRouter.put("/:id", authUser, async (req, res) => {
 });
 
 /*Route below has two functions from helpers which returns promises. One function sets random places as reserved and pushes them to array - and the second function sets reserved places from array as sold*/
-pixelRouter.put("/buy/nonlimited", authUser, async (req, res) => {
-  const { qty, name, url, description, background } = req.body;
-  const { _id: userId } = req.user;
-  if (!qty || !name || !url || !background) {
-    return res.status(400).json({ message: "Złe dane" });
-  }
-
-  //array of buyed places - for user
-  const buyedPlaces = [];
-
-  try {
-    await setReservedPlaces(qty, buyedPlaces);
-    //checking if an array has number of required places for sold
-    if (buyedPlaces.length !== qty) {
-      throw new Error("Coś poszło nie tak z ilością wymaganych miejsc");
+pixelRouter.post(
+  "/buy/nonlimited",
+  /*authUser,*/ async (req, res) => {
+    const { qty, name, url, description, background } = req.body;
+    //const { _id: userId } = req.user;
+    if (!qty || !name || !url || !background) {
+      return res.status(400).json({ message: "Złe dane" });
     }
-    //If everything is ok - update reserved places for sold places
-    await setSoldPlaces(
-      buyedPlaces,
-      name,
-      url,
-      background,
-      description,
-      userId
-    );
-    res.status(200).json(buyedPlaces);
-  } catch (err) {
-    //if something gone wrong - reset reserved places in array
-    if (buyedPlaces.length > 0) {
-      for (const place of buyedPlaces) {
-        await Pixel.findOneAndUpdate({ _id: place._id }, { isReserved: false });
+
+    //array of buyed places - for user
+    const buyedPlaces = [];
+
+    try {
+      /*await setReservedPlaces(qty, buyedPlaces);
+      //checking if an array has number of required places for sold
+      if (buyedPlaces.length !== qty) {
+        throw new Error("Coś poszło nie tak z ilością wymaganych miejsc");
+      }*/
+
+      //stripe
+      /*const paymentIntent = await stripe.paymentIntents.create(
+        {
+          payment_method_types: ["card"],
+          amount: 1000,
+          currency: "pln",
+        },
+        {
+          stripeAccount: "acct_1KQfEbCOnznOsZux",
+        }
+      );
+      console.log(paymentIntent);*/
+
+      const session = await stripe.checkout.sessions.create(
+        {
+          payment_method_types: ["card", "p24"],
+          line_items: [
+            {
+              name: "Stainless Steel Water Bottle",
+              amount: 1000,
+              currency: "pln",
+              quantity: 1,
+            },
+          ],
+          mode: "payment",
+          customer_email: "",
+          expires_at: 60,
+          success_url: "https://example.com/success",
+          cancel_url: "https://example.com/cancel",
+        },
+        {
+          stripeAccount: "acct_1KQfEbCOnznOsZux",
+        }
+      );
+      console.log(session);
+
+      //If everything is ok - update reserved places for sold places
+      /*await setSoldPlaces(
+        buyedPlaces,
+        name,
+        url,
+        background,
+        description,
+        userId
+      );*/
+      res.status(200).json(buyedPlaces);
+    } catch (err) {
+      //if something gone wrong - reset reserved places in array
+      if (buyedPlaces.length > 0) {
+        for (const place of buyedPlaces) {
+          await Pixel.findOneAndUpdate(
+            { _id: place._id },
+            { isReserved: false }
+          );
+        }
       }
+
+      res.status(400).json({ message: err.message });
     }
-
-    res.status(400).json({ message: err.message });
   }
-});
+);
 
+pixelRouter.post("/payments", (req, res) => {
+  res.status(200).json({ success: true });
+  console.log("Received event");
+  console.log(req.body);
+});
 /*pixelRouter.get("/test/test", async (req, res) => {
   const limitedPlaces = await Pixel.find({ isLimited: true });
   const buyedPlaces = [];
