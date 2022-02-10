@@ -22,6 +22,7 @@ mongoose
 
 //middleware
 app.use(cors());
+app.use("/api/pixels/payments", express.raw({ type: "*/*" }));
 app.use(bodyParser.json());
 
 //routers

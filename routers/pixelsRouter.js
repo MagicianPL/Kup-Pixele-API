@@ -1,5 +1,6 @@
 const express = require("express");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_API);
+var bodyParser = require("body-parser");
 const Pixel = require("../models/pixelModel");
 const authUser = require("../helpers/authUser");
 const getRandomArrayIndex = require("../helpers/getRandomArrayIndex");
@@ -153,8 +154,8 @@ pixelRouter.post(
             },
           ],
           mode: "payment",
-          customer_email: "",
-          expires_at: 60,
+          customer_email: "test@test.com",
+          expires_at: Math.ceil(Date.now() / 1000) + 3720,
           success_url: "https://example.com/success",
           cancel_url: "https://example.com/cancel",
         },
@@ -163,7 +164,6 @@ pixelRouter.post(
         }
       );
       console.log(session);
-
       //If everything is ok - update reserved places for sold places
       /*await setSoldPlaces(
         buyedPlaces,
@@ -190,11 +190,37 @@ pixelRouter.post(
   }
 );
 
-pixelRouter.post("/payments", (req, res) => {
-  res.status(200).json({ success: true });
-  console.log("Received event");
-  console.log(req.body);
+pixelRouter.post("/payments", async (req, res) => {
+  //Checking if request is from STRIPE
+  const payload = req.body;
+  const sig = req.headers["stripe-signature"];
+  const endpointSecret =
+    "whsec_3614f2537ba0e6dca8acb0ab11f5e42dd7204af88eaa6ee20149695a58ce7e07";
+  let event;
+  try {
+    event = await stripe.webhooks.constructEvent(payload, sig, endpointSecret);
+    res.status(200).json({ success: true });
+  } catch (err) {
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
+  //********************************* */
+  //handling type
+  switch (event.type) {
+    case "payment_intent.payment_failed":
+      console.log("Code for failed");
+      break;
+    case "payment_intent.canceled":
+    //code for canceled (also expired)
+    case "payment_intent.succeeded":
+      console.log("Payment succeeeded");
+      //code for updating places on isSold: true
+      break;
+    default:
+      return null;
+  }
+  console.log("ndkndnn");
 });
+
 /*pixelRouter.get("/test/test", async (req, res) => {
   const limitedPlaces = await Pixel.find({ isLimited: true });
   const buyedPlaces = [];
