@@ -165,9 +165,12 @@ pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
         stripeAccount: "acct_1KQfEbCOnznOsZux",
       }
     );
-    console.log(session);
-    //TODO *********** send res with session url
     res.status(200).json(buyedPlaces);
+    console.log(session);
+    setTimeout(() => {
+      stripe.checkout.sessions.expire(session.id);
+    }, 720000);
+    //TODO *********** send res with session url
   } catch (err) {
     //if something gone wrong - reset reserved places in array
     if (buyedPlaces.length > 0) {
@@ -195,31 +198,29 @@ pixelRouter.post("/payments", async (req, res) => {
   //********************************* */
   //handling type
   switch (event.type) {
-    case "payment_intent.payment_failed": {
-      console.log("Code for failed");
-      //canceling payment so canceling event will be send
-      const paymentIntentId = event.data.object.id;
-      const canceledIntent = await stripe.paymentIntents.cancel(
-        paymentIntentId
-      );
-      break;
-    }
     case "payment_intent.canceled": {
       //code for canceled (also expired)
       //place isReserved: true on false
+      console.log("payment_intent.canceled");
       const buyedPlaces = JSON.parse(event.data.object.metadata.places);
       for (const place of buyedPlaces) {
+        console.log("canceling");
         await Pixel.findOneAndUpdate({ _id: place._id }, { isReserved: false });
+        console.log("canceled");
       }
     }
     case "payment_intent.succeeded": {
       console.log("Payment succeeeded");
-      const buyedPlaces = JSON.parse(event.data.object.metadata.places);
-      //code for updating places on isSold: true
-      //updating reserved places for sold places
-      const { name, url, background, description, userId } =
-        event.data.object.metadata;
-      setSoldPlaces(buyedPlaces, name, url, background, description, userId);
+      if (event.data.object.status === "canceled") {
+        return;
+      } else {
+        const buyedPlaces = JSON.parse(event.data.object.metadata.places);
+        //code for updating places on isSold: true
+        //updating reserved places for sold places
+        const { name, url, background, description, userId } =
+          event.data.object.metadata;
+        setSoldPlaces(buyedPlaces, name, url, background, description, userId);
+      }
       break;
     }
     default:
