@@ -55,7 +55,7 @@ const createCheckoutSession = async (
   });
 
   console.log(session);
-  //setting session expiring funcionality if is not paid after specific time
+  //setting session expiring funcionality if is not paid after specific time - 12 minutes
   setTimeout(async () => {
     const returnedSession = await stripe.checkout.sessions.retrieve(session.id);
     if (returnedSession.status === "complete") {
@@ -63,7 +63,7 @@ const createCheckoutSession = async (
     } else {
       stripe.checkout.sessions.expire(session.id);
     }
-  }, 60000);
+  }, 720000);
   return session.url;
 };
 
