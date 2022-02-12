@@ -136,7 +136,7 @@ pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
         payment_intent_data: {
           metadata: {
             email: req.user?.email || "test@test.com",
-            places: JSON.stringify(buyedPlaces),
+            places: JSON.stringify(buyedPlaces.map((place) => place.number)),
             totalPriceInGrosz: qty * 1000,
             name,
             url,
