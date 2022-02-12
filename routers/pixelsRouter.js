@@ -2,6 +2,7 @@ const express = require("express");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_API);
 var bodyParser = require("body-parser");
 const Pixel = require("../models/pixelModel");
+const PlaceOrder = require("../models/PlaceOrderModel");
 const authUser = require("../helpers/authUser");
 const getRandomArrayIndex = require("../helpers/getRandomArrayIndex");
 const { findOneAndUpdate } = require("../models/pixelModel");
@@ -109,7 +110,7 @@ pixelRouter.put("/:id", authUser, async (req, res) => {
   }
 });
 
-/*Route below has two functions from helpers which returns promises. One function sets random places as reserved and pushes them to array - and the second function sets reserved places from array as sold*/
+/* Route below has a function from helpers which returns promise. It sets random places as reserved and pushes them to array */
 pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
   const { qty, name, url, description, background } = req.body;
   const { _id: userId } = req.user;
@@ -117,7 +118,7 @@ pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
     return res.status(400).json({ message: "Złe dane" });
   }
 
-  //array of buyed places - for user
+  //array of buyed places
   const buyedPlaces = [];
 
   try {
@@ -136,7 +137,7 @@ pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
         payment_intent_data: {
           metadata: {
             email: req.user?.email || "test@test.com",
-            places: JSON.stringify(buyedPlaces.map((place) => place.number)),
+            //places: JSON.stringify(buyedPlaces.map((place) => place.number)),
             totalPriceInGrosz: qty * 1000,
             name,
             url,
@@ -165,11 +166,23 @@ pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
         stripeAccount: "acct_1KQfEbCOnznOsZux",
       }
     );
+    await PlaceOrder.create({
+      paymentIntentId: session.payment_intent,
+      places: buyedPlaces,
+      costInGrosz: qty * 1000,
+    });
     res.status(200).json(buyedPlaces);
     console.log(session);
-    setTimeout(() => {
-      stripe.checkout.sessions.expire(session.id);
-    }, 720000);
+    setTimeout(async () => {
+      const returnedSession = await stripe.checkout.sessions.retrieve(
+        session.id
+      );
+      if (returnedSession.status === "complete") {
+        return;
+      } else {
+        stripe.checkout.sessions.expire(session.id);
+      }
+    }, 60000);
     //TODO *********** send res with session url
   } catch (err) {
     //if something gone wrong - reset reserved places in array
@@ -202,7 +215,10 @@ pixelRouter.post("/payments", async (req, res) => {
       //code for canceled (also expired)
       //place isReserved: true on false
       console.log("payment_intent.canceled");
-      const buyedPlaces = JSON.parse(event.data.object.metadata.places);
+      const order = await PlaceOrder.findOne({
+        paymentIntentId: event.data.object.id,
+      });
+      const buyedPlaces = order.places;
       for (const place of buyedPlaces) {
         console.log("canceling");
         await Pixel.findOneAndUpdate({ _id: place._id }, { isReserved: false });
@@ -214,7 +230,10 @@ pixelRouter.post("/payments", async (req, res) => {
       if (event.data.object.status === "canceled") {
         return;
       } else {
-        const buyedPlaces = JSON.parse(event.data.object.metadata.places);
+        const order = await PlaceOrder.findOne({
+          paymentIntentId: event.data.object.id,
+        });
+        const buyedPlaces = order.places;
         //code for updating places on isSold: true
         //updating reserved places for sold places
         const { name, url, background, description, userId } =
