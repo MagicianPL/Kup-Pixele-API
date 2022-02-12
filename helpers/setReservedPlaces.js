@@ -23,7 +23,7 @@ const setReservedPlaces = (qty, buyedPlaces) => {
       buyedPlaces.push(reserved.toObject());
     }
 
-    if (buyedPlaces.length === qty) {
+    if (buyedPlaces.length === Number(qty)) {
       resolve();
     } else {
       reject({ message: "Wystąpił błąd z wymaganą ilością" });

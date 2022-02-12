@@ -52,6 +52,7 @@ const createCheckoutSession = async (
     paymentIntentId: session.payment_intent,
     places: buyedPlaces,
     costInGrosz: qty * 1000,
+    owner: userId,
   });
 
   console.log(session);

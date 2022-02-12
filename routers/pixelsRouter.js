@@ -123,7 +123,7 @@ pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
   try {
     await setReservedPlaces(qty, buyedPlaces);
     //checking if an array has number of required places for sold
-    if (buyedPlaces.length !== qty) {
+    if (buyedPlaces.length !== Number(qty)) {
       throw new Error("Coś poszło nie tak z ilością wymaganych miejsc");
     }
 
