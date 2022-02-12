@@ -4,10 +4,9 @@ var bodyParser = require("body-parser");
 const Pixel = require("../models/pixelModel");
 const PlaceOrder = require("../models/PlaceOrderModel");
 const authUser = require("../helpers/authUser");
-const getRandomArrayIndex = require("../helpers/getRandomArrayIndex");
-const { findOneAndUpdate } = require("../models/pixelModel");
 const setReservedPlaces = require("../helpers/setReservedPlaces");
 const setSoldPlaces = require("../helpers/setSoldPlaces");
+const createCheckoutSession = require("../helpers/stripe");
 const pixelRouter = express.Router();
 
 pixelRouter.get("/seed", async (req, res) => {
@@ -129,61 +128,19 @@ pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
     }
 
     //stripe
-    const session = await stripe.checkout.sessions.create(
-      {
-        payment_method_types: ["card", "p24"],
-        mode: "payment",
-        customer_email: req.user?.email || "test@test.com",
-        payment_intent_data: {
-          metadata: {
-            email: req.user?.email || "test@test.com",
-            //places: JSON.stringify(buyedPlaces.map((place) => place.number)),
-            totalPriceInGrosz: qty * 1000,
-            name,
-            url,
-            description,
-            background,
-            userId,
-          },
-        },
-        line_items: [
-          {
-            price_data: {
-              currency: "pln",
-              unit_amount: 1000,
-              product_data: {
-                name: "Pixelowe Miejsce",
-              },
-            },
-            quantity: qty,
-          },
-        ],
-        expires_at: Math.ceil(Date.now() / 1000) + 3720,
-        success_url: "https://magicianpl.github.io/Kup-Pixele/",
-        cancel_url: "https://magicianpl.github.io/Kup-Pixele/",
-      },
-      {
-        stripeAccount: "acct_1KQfEbCOnznOsZux",
-      }
+    const sessionUrl = await createCheckoutSession(
+      req.user,
+      qty,
+      name,
+      url,
+      description,
+      background,
+      userId,
+      buyedPlaces
     );
-    await PlaceOrder.create({
-      paymentIntentId: session.payment_intent,
-      places: buyedPlaces,
-      costInGrosz: qty * 1000,
-    });
-    res.status(200).json(buyedPlaces);
-    console.log(session);
-    setTimeout(async () => {
-      const returnedSession = await stripe.checkout.sessions.retrieve(
-        session.id
-      );
-      if (returnedSession.status === "complete") {
-        return;
-      } else {
-        stripe.checkout.sessions.expire(session.id);
-      }
-    }, 60000);
+
     //TODO *********** send res with session url
+    res.status(200).json(buyedPlaces);
   } catch (err) {
     //if something gone wrong - reset reserved places in array
     if (buyedPlaces.length > 0) {
@@ -195,6 +152,7 @@ pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
   }
 });
 
+// For listening events from STRIPE
 pixelRouter.post("/payments", async (req, res) => {
   //Checking if request is from STRIPE
   const payload = req.body;
@@ -214,19 +172,15 @@ pixelRouter.post("/payments", async (req, res) => {
     case "payment_intent.canceled": {
       //code for canceled (also expired)
       //place isReserved: true on false
-      console.log("payment_intent.canceled");
       const order = await PlaceOrder.findOne({
         paymentIntentId: event.data.object.id,
       });
       const buyedPlaces = order.places;
       for (const place of buyedPlaces) {
-        console.log("canceling");
         await Pixel.findOneAndUpdate({ _id: place._id }, { isReserved: false });
-        console.log("canceled");
       }
     }
     case "payment_intent.succeeded": {
-      console.log("Payment succeeeded");
       if (event.data.object.status === "canceled") {
         return;
       } else {
@@ -246,39 +200,5 @@ pixelRouter.post("/payments", async (req, res) => {
       return null;
   }
 });
-
-/*pixelRouter.get("/test/test", async (req, res) => {
-  const limitedPlaces = await Pixel.find({ isLimited: true });
-  const buyedPlaces = [];
-  for (i = 1; i < 4; i++) {
-    console.log(i);
-    console.log(limitedPlaces.length);
-    const randomNumber =
-      Math.floor(Math.random() * limitedPlaces.length) + 4950;
-    console.log(randomNumber);
-    let place = await Pixel.findOne({ number: randomNumber });
-    if (place.isSold === true || place.isLimited === false) {
-      do {
-        const randomNumber = Math.floor(Math.random * limitedPlaces.length);
-        const findPlace = await Pixel.findOne({ number: randomNumber });
-        place = findPlace;
-      } while (place.isSold === true || place.isLimited === false);
-    } else {
-      await Pixel.findOneAndUpdate(
-        { number: place.number },
-        {
-          name: "Github",
-          url: "https://github.com/MagicianPL",
-          description: "Github account with my repositories",
-          isSold: true,
-          background: "#006400",
-          owner: "61f5526e69caf07b25da9a1d",
-        }
-      );
-      buyedPlaces.push(place);
-    }
-  }
-  res.json({ array: buyedPlaces });
-});*/
 
 module.exports = pixelRouter;
