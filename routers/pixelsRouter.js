@@ -157,8 +157,7 @@ pixelRouter.post("/payments", async (req, res) => {
   //Checking if request is from STRIPE
   const payload = req.body;
   const sig = req.headers["stripe-signature"];
-  const endpointSecret =
-    "whsec_3614f2537ba0e6dca8acb0ab11f5e42dd7204af88eaa6ee20149695a58ce7e07";
+  const endpointSecret = process.env.STRIPE_ENDPOINT_SECRET;
   let event;
   try {
     event = await stripe.webhooks.constructEvent(payload, sig, endpointSecret);
