@@ -7,6 +7,7 @@ const placeOrderSchema = new mongoose.Schema(
     costInGrosz: { type: Number },
     owner: { type: mongoose.Schema.Types.ObjectId, ref: "PixelUser" },
     isPaid: { type: Boolean, default: false },
+    expired: { type: Boolean, default: false },
   },
   {
     timestamps: true,

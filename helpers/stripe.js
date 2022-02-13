@@ -64,7 +64,7 @@ const createCheckoutSession = async (
     } else {
       stripe.checkout.sessions.expire(session.id);
     }
-  }, 720000);
+  }, 60000);
   return session.url;
 };
 
