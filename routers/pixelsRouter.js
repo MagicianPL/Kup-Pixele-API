@@ -139,8 +139,7 @@ pixelRouter.post("/buy/nonlimited", authUser, async (req, res) => {
       buyedPlaces
     );
 
-    //TODO *********** send res with session url
-    res.status(200).json(buyedPlaces);
+    res.status(200).json(sessionUrl);
   } catch (err) {
     //if something gone wrong - reset reserved places in array
     if (buyedPlaces.length > 0) {

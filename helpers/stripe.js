@@ -55,7 +55,6 @@ const createCheckoutSession = async (
     owner: userId,
   });
 
-  console.log(session);
   //setting session expiring funcionality if is not paid after specific time - 12 minutes
   setTimeout(async () => {
     const returnedSession = await stripe.checkout.sessions.retrieve(session.id);
