@@ -178,7 +178,7 @@ pixelRouter.post("/payments", async (req, res) => {
       for (const place of buyedPlaces) {
         await Pixel.findOneAndUpdate({ _id: place._id }, { isReserved: false });
       }
-      PlaceOrder.findOneAndUpdate({ _id: order._id }, { expired: true });
+      await PlaceOrder.findOneAndUpdate({ _id: order._id }, { expired: true });
     }
     case "payment_intent.succeeded": {
       if (event.data.object.status === "canceled") {
@@ -193,7 +193,7 @@ pixelRouter.post("/payments", async (req, res) => {
         const { name, url, background, description, userId } =
           event.data.object.metadata;
         setSoldPlaces(buyedPlaces, name, url, background, description, userId);
-        PlaceOrder.findOneAndUpdate({ _id: order._id }, { isPaid: true });
+        await PlaceOrder.findOneAndUpdate({ _id: order._id }, { isPaid: true });
       }
       break;
     }
