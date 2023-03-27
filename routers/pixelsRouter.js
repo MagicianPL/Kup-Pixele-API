@@ -33,7 +33,7 @@ pixelRouter.get("/seed", async (req, res) => {
 
 pixelRouter.get("/", async (req, res) => {
   try {
-    const data = await Pixel.find();
+    const data = await Pixel.find({}, null, { skipSessions: true });
     res.status(200).json(data);
   } catch (err) {
     res.status(400).json({ message: err.message });
